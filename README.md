@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=venom&color=0:8B0000,50:C1121F,100:FFB300&height=200&section=header&text=PARSHWA%20SANGAME&fontSize=48&fontColor=FFFFFF&animation=fadeIn&fontAlignY=38&desc=Embedded%20Systems%20%7C%20Hardware%20%7C%20Research&descAlignY=58&descSize=18" />
+<img src="https://capsule-render.vercel.app/api?type=venom&color=0:8B0000,50:C1121F,100:FFB300&height=200&section=header&text=PARSHWA%20SANGAME&fontSize=48&fontColor=FFFFFF&animation=fadeIn&fontAlignY=38&desc=Embedded%20Systems%20%7C%20Industry%204.0%20%7C%20IIoT&descAlignY=58&descSize=18" />
 
 </div>
 
