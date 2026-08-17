@@ -1,134 +1,52 @@
-<div align="center">
+# PdM Edge Node — Multi-Sensor Predictive Maintenance
 
-<img src="https://capsule-render.vercel.app/api?type=venom&color=0:8B0000,50:C1121F,100:FFB300&height=200&section=header&text=PARSHWA%20SANGAME&fontSize=48&fontColor=FFFFFF&animation=fadeIn&fontAlignY=38&desc=Embedded%20Systems%20%7C%20Hardware%20%7C%20Research&descAlignY=58&descSize=18" />
+A bare-metal STM32 system that monitors an electric motor's health in real time using four sensors across four communication protocols. It streams live data to a browser or mobile dashboard with adaptive, statistics-based anomaly detection.
 
-</div>
+## Overview
 
-<div align="center">
+The node reads current, vibration, acoustic, and temperature data from a running motor, computes RMS features on-device, and streams them over UART to a PC. A Python bridge serves a live dashboard accessible from any phone or laptop on the same WiFi. Thresholds can be set manually from motor ratings or learned automatically by baselining a healthy motor.
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&pause=800&color=00D4FF&center=true&vCenter=true&width=700&lines=SYSTEM+INITIALIZING...;LOADING+SUIT+LOG...;WELCOME.+SYSTEMS+ONLINE.;BUILDING%3A+PREDICTIVE+MAINTENANCE+EDGE+NODE" alt="boot sequence" />
+## Hardware / Firmware
 
-</div>
+Target: STM32F446RE, bare-metal C (register-level, no HAL).
 
-<p align="center">
-  <img src="https://img.shields.io/badge/STATUS-ONLINE-FFB300?style=for-the-badge&labelColor=8B0000" />
-  <img src="https://img.shields.io/badge/CORE-STM32F446RE-00D4FF?style=for-the-badge&labelColor=1a1a1a" />
-  <img src="https://img.shields.io/badge/FIRMWARE-BARE--METAL-C1121F?style=for-the-badge&labelColor=1a1a1a" />
-</p>
+- **Current** — SCT-013 current transformer on ADC, 1.65V bias front-end, sum-of-squares RMS
+- **Vibration** — ADXL345 3-axis accelerometer over SPI, RMS of acceleration magnitude
+- **Acoustic** — MAX4466 microphone on ADC, RMS level
+- **Temperature** — DS18B20 probe over 1-Wire, bit-banged with microsecond timing via TIM2
+- Four protocols in one node: ADC ×2, SPI, 1-Wire
+- All four features streamed over USART2 to USB at 115200 baud
+- Non-blocking architecture — the slow DS18B20 conversion does not stall the fast sensors
+- FPU enabled for floating-point RMS math
+- Star-grounding — separate analog and digital grounds to reduce noise coupling
 
----
+## Software (PC side)
 
-## // SYSTEM OVERVIEW
+- **Python bridge** — reads the serial stream, serves live JSON and the dashboard over HTTP
+- **Dashboard** — real-time gauges, feature-history scope, live radar signature plot, and escalating Normal / Warning / Critical states
+- Accessible on a phone over local WiFi
 
-Final-year Electronics and Communication Engineering student, Bangalore. I build embedded hardware, sensing systems, firmware, and the analog circuitry that lets a machine tell you it is about to fail before it does. Alongside engineering, I run independent research on where new hardware opportunities are emerging across Indian industry.
+## Features
 
-Think of it as building my own suit, one system at a time. Not a weapon. A machine that watches other machines and warns you first.
+- **Manual mode** — enter motor HP; thresholds are set automatically from NEC full-load-current tables
+- **Learn mode** — baselines a healthy motor for a set duration (up to 10 minutes), then sets thresholds statistically: mean + 3σ for warning, mean + 5σ for trip
+- **Priority-ordered alarms** — vibration > temperature > current > acoustic (acoustic trusted least, as it is noise-prone)
+- **CSV export** for logging and offline analysis
+- **Sensor-range awareness** — warns if the entered motor size exceeds the current clamp's range
 
-- 🔧 Currently building: four-sensor predictive maintenance node, STM32
-- ⚡ Currently calibrating: RTOS and CAN bus fundamentals
-- 🎯 Target sectors: industrial automation, EV and battery systems, IoT hardware
-- 📡 Comms channel: **sangame.parshwa@gmail.com**
+## Engineering challenges solved
 
----
+- Correct RMS via sum-of-squares rather than peak detection
+- FPU-enable requirement for float math on bare-metal (silent HardFault otherwise)
+- Proper C-runtime startup, which fixed a debugger visibility issue
+- DS18B20 1-Wire timing and the mandatory pull-up
+- I2C bus debugging with per-stage fault diagnostics
+- Analog/digital ground separation to eliminate cross-sensor noise
 
-## // SUIT LOG
+## Scope notes
 
-### 🔴🟡 MARK I — Predictive Maintenance Edge Node
-**[github.com/sangameparshwa-sudo/stm32-predictive-maintenance](https://github.com/sangameparshwa-sudo/stm32-predictive-maintenance)**
-*Flagship build. Primary system online.*
+- The "learning" is statistical baseline detection (mean + kσ), not a trained ML model. It is best described as adaptive statistical anomaly detection.
+- Current and temperature limits are grounded in standards. Vibration and acoustic thresholds are placeholders meant to be baselined on a real motor.
+- Assembled on a breadboard. Perfboard or a soldered build is recommended for deployment stability.
 
-<p>
-  <img src="https://img.shields.io/badge/STATUS-CALIBRATING-FFB300?style=flat-square&labelColor=1a1a1a" />
-  <img src="https://img.shields.io/badge/CORE-STM32F446RE-00D4FF?style=flat-square&labelColor=1a1a1a" />
-  <img src="https://img.shields.io/badge/MODE-BARE--METAL-C1121F?style=flat-square&labelColor=1a1a1a" />
-</p>
-
-A device built to catch machine faults before they cause failure. Four sensors feed a single STM32 across three buses. Every cycle, each sensor is reduced to one feature, current, sound, vibration, and temperature, and together those features describe the machine's health in real time. All firmware runs bare-metal at register level.
-
-**// DIAGNOSTIC PANEL**
-
-| Subsystem | Sensor | Bus | Status |
-|---|---|---|---|
-| Current sensing | SCT-013-030 CT | ADC (multi-channel) | 🟢 ONLINE, verified and calibrated |
-| Acoustic sensing | MAX4466 mic amp | ADC (multi-channel) | 🟢 ONLINE |
-| Vibration sensing | ADXL345 | SPI1 (Mode 3) | 🟢 ONLINE |
-| Thermal sensing | MLX90614 IR | I2C1 (SMBus) | 🟡 CALIBRATING, physical fault diagnosed |
-
-**// BUILD NOTES**
-
-- Designed a custom analog front end for the current transformer. A 1.65V active DC-bias network centers the AC signal inside the ADC's input range, with decoupling to isolate supply ripple.
-- Computed true RMS current by sum of squares with per-window DC offset removal. An earlier peak-to-peak method produced phantom readings under electrical noise. Diagnosing that and rebuilding the math was the single biggest accuracy fix in the whole system.
-- Chose SPI over I2C for the vibration sensor, for faster data and to keep the I2C bus free. Bring-up verifies the DEVID register reads 0xE5 before trusting any data.
-- Take the RMS of acceleration magnitude about its mean, so gravity and mounting orientation cancel out of the vibration feature.
-- Added bounded timeouts to the I2C driver, so a faulty sensor flags an error instead of taking the whole node down with it. That design call is proving itself right now. Thermal is down, and the other three systems keep running clean.
-- Own the build end to end: component selection, BOM, vendor sourcing, and phased integration with validation at each stage.
-
-**// NEXT DEPLOYMENT:** fix the thermal channel's physical connection, then bring the anomaly detection layer online over the feature vector.
-
----
-
-### 🟡 MARK II — ML-Based Smart Billing Cart
-**[github.com/sangameparshwa-sudo/automatic-smart-billing-cart-esp32](https://github.com/sangameparshwa-sudo/automatic-smart-billing-cart-esp32)**
-
-A cart that bills items in real time as they are added. An ESP32-CAM recognizes each product through the camera, inference running entirely on-device, no cloud dependency. Led technical coordination across a 4-member crew, task allocation to integration checkpoints, delivered on schedule.
-
-`ESP32-CAM` `Edge Impulse` `Embedded ML`
-
-### 🔵 MARK III — Opportunity Research, India
-**[github.com/sangameparshwa-sudo/opportunity-research-india](https://github.com/sangameparshwa-sudo/opportunity-research-india)**
-
-Independent intelligence gathering. Tracking emerging hardware and manufacturing opportunities across Indian industry: demand drivers, supply chain structures, and where technical gaps still exist. Built from trade exhibitions and ground observation, not headlines.
-
-`Industrial Automation` `EV & Battery Systems` `Renewable Energy` `Smart Hardware`
-
----
-
-## // CORE SYSTEMS
-
-<p align="left">
-  <img src="https://skillicons.dev/icons?i=c,arduino,git,github&theme=dark" />
-</p>
-
-| Layer | Loadout |
-|---|---|
-| **Languages** | Embedded C, C |
-| **Firmware** | Bare-metal register-level programming, STM32 HAL, peripheral driver integration, hardware bring-up and debugging |
-| **Platforms** | ARM Cortex-M4 (STM32 Nucleo-F446RE), ESP32 / ESP32-CAM, 32-bit microcontrollers |
-| **Interfaces** | I2C, SPI, UART, ADC (multi-channel scanning) |
-| **Hardware** | Analog signal conditioning, current sensing, sensor integration, component selection |
-| **Tools** | STM32CubeIDE, Arduino IDE, LabVIEW, Edge Impulse, Git/GitHub |
-
-**// SYSTEMS IN CALIBRATION:** RTOS fundamentals (tasks, scheduler, preemption, queues/semaphores) · CAN bus fundamentals (differential signaling, message-based arbitration) · BMS architecture · PCB design (KiCad)
-
----
-
-## // CERTIFIED PROTOCOLS
-
-- Advanced C Programming, Microchip Technology Inc.
-- ARM Cortex-M, Pyjama Cafe
-- Getting Started with AI, IBM SkillsBuild
-
----
-
-<div align="center">
-
-<img src="https://github-readme-stats.vercel.app/api?username=sangameparshwa-sudo&show_icons=true&theme=dark&title_color=FFB300&icon_color=00D4FF&text_color=FFFFFF&bg_color=0D1117&border_color=C1121F&hide_border=false" />
-
-</div>
-
-<div align="center">
-
-<a href="https://in.linkedin.com/in/parshwa-sangame-a89484314">
-  <img src="https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" />
-</a>
-<a href="mailto:sangame.parshwa@gmail.com">
-  <img src="https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white" />
-</a>
-
-<br><br>
-
-<img src="https://komarev.com/ghpvc/?username=sangameparshwa-sudo&label=SYSTEM+SCANS&color=C1121F&style=for-the-badge" alt="profile views" />
-
-<img src="https://capsule-render.vercel.app/api?type=venom&color=0:FFB300,50:C1121F,100:8B0000&height=100&section=footer" />
-
-</div>
+## Repository structure
