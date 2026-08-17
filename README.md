@@ -1,52 +1,38 @@
-# PdM Edge Node — Multi-Sensor Predictive Maintenance
+<p align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=26&pause=1000&color=00B4D8&center=true&vCenter=true&width=650&lines=Parshwa+Sangame;Electronics+Engineer+%7C+BIT+2027;Embedded+Systems+%7C+Industrial+IoT+%7C+Edge+AI;I+build+hardware+that+ships" alt="Typing banner" />
+</p>
 
-A bare-metal STM32 system that monitors an electric motor's health in real time using four sensors across four communication protocols. It streams live data to a browser or mobile dashboard with adaptive, statistics-based anomaly detection.
+## About
 
-## Overview
+Final-year Electronics Engineering student at Bangalore Institute of Technology (graduating May 2027), based in Bengaluru. I build at the intersection of embedded systems, industrial IoT, and edge AI — bare-metal firmware, on-device inference, and the dashboards and tooling that make hardware usable.
 
-The node reads current, vibration, acoustic, and temperature data from a running motor, computes RMS features on-device, and streams them over UART to a PC. A Python bridge serves a live dashboard accessible from any phone or laptop on the same WiFi. Thresholds can be set manually from motor ratings or learned automatically by baselining a healthy motor.
+I care about the full path from sensor to decision: the register-level firmware, the communication protocols, the signal processing, and the interface a person actually reads. Alongside the engineering, I keep independent research notes on hardware and manufacturing opportunities in India, drawn from ground observation rather than headlines.
 
-## Hardware / Firmware
+## Projects
 
-Target: STM32F446RE, bare-metal C (register-level, no HAL).
+**[stm32-predictive-maintenance](https://github.com/sangameparshwa-sudo/stm32-predictive-maintenance)**
+A bare-metal STM32F446RE node that monitors an electric motor's health in real time using four sensors across four protocols (ADC, SPI, 1-Wire). Computes RMS features on-device, streams over UART, and serves a live browser/mobile dashboard with adaptive statistical anomaly detection. Register-level C, no HAL.
 
-- **Current** — SCT-013 current transformer on ADC, 1.65V bias front-end, sum-of-squares RMS
-- **Vibration** — ADXL345 3-axis accelerometer over SPI, RMS of acceleration magnitude
-- **Acoustic** — MAX4466 microphone on ADC, RMS level
-- **Temperature** — DS18B20 probe over 1-Wire, bit-banged with microsecond timing via TIM2
-- Four protocols in one node: ADC ×2, SPI, 1-Wire
-- All four features streamed over USART2 to USB at 115200 baud
-- Non-blocking architecture — the slow DS18B20 conversion does not stall the fast sensors
-- FPU enabled for floating-point RMS math
-- Star-grounding — separate analog and digital grounds to reduce noise coupling
+**[automatic-smart-billing-cart-esp32](https://github.com/sangameparshwa-sudo/automatic-smart-billing-cart-esp32)**
+Real-time product recognition on ESP32-CAM using Edge Impulse on-device inference. No cloud required — all inference runs on the microcontroller.
 
-## Software (PC side)
+**[opportunity-research-india](https://github.com/sangameparshwa-sudo/opportunity-research-india)**
+Independent research notes on emerging hardware and manufacturing opportunities in India, built from ground-level observation. << one line on why you keep this / what angle >>
 
-- **Python bridge** — reads the serial stream, serves live JSON and the dashboard over HTTP
-- **Dashboard** — real-time gauges, feature-history scope, live radar signature plot, and escalating Normal / Warning / Critical states
-- Accessible on a phone over local WiFi
+## Skills
 
-## Features
+**Embedded / Firmware:** Bare-metal C, register-level programming, STM32 (F446RE), ESP32 / ESP32-CAM, RTOS concepts
+**Protocols:** UART, SPI, I2C, 1-Wire, ADC
+**Signal / Sensing:** RMS feature extraction, accelerometer (ADXL345), current sensing (SCT-013), microphone, DS18B20, sensor front-end design
+**Edge AI:** Edge Impulse, on-device inference
+**Tooling / PC-side:** Python, serial bridges, HTML/JS dashboards
+<< add or cut anything here >>
 
-- **Manual mode** — enter motor HP; thresholds are set automatically from NEC full-load-current tables
-- **Learn mode** — baselines a healthy motor for a set duration (up to 10 minutes), then sets thresholds statistically: mean + 3σ for warning, mean + 5σ for trip
-- **Priority-ordered alarms** — vibration > temperature > current > acoustic (acoustic trusted least, as it is noise-prone)
-- **CSV export** for logging and offline analysis
-- **Sensor-range awareness** — warns if the entered motor size exceeds the current clamp's range
+## Research & Interests
 
-## Engineering challenges solved
+Beyond firmware, I follow manufacturing, industrial automation, and agritech closely — including field problems in agriculture I've seen firsthand and believe IoT and robotics can address at scale. My opportunity-research-india repo is where I write these observations down.
 
-- Correct RMS via sum-of-squares rather than peak detection
-- FPU-enable requirement for float math on bare-metal (silent HardFault otherwise)
-- Proper C-runtime startup, which fixed a debugger visibility issue
-- DS18B20 1-Wire timing and the mandatory pull-up
-- I2C bus debugging with per-stage fault diagnostics
-- Analog/digital ground separation to eliminate cross-sensor noise
+## Reach me
 
-## Scope notes
-
-- The "learning" is statistical baseline detection (mean + kσ), not a trained ML model. It is best described as adaptive statistical anomaly detection.
-- Current and temperature limits are grounded in standards. Vibration and acoustic thresholds are placeholders meant to be baselined on a real motor.
-- Assembled on a breadboard. Perfboard or a soldered build is recommended for deployment stability.
-
-## Repository structure
+- LinkedIn: << your LinkedIn URL >>
+- Email: << your email, or remove this line >>
